@@ -386,7 +386,7 @@ class Contract(Node):
         self.cond: Arith = cond
 
     @override
-    def serialize(self):
+    def serialize(self) -> str:
         return f"{self.name} {self.cond.serialize()}"
 
 # Postcondition arithmetic expression
@@ -419,7 +419,7 @@ class In(Stmt):
         super().__init__(name)
         
     @override
-    def serialize(self):
+    def serialize(self) -> str:
         return f"in {self.name}"
 
 # Ouput expression of a module
@@ -431,7 +431,7 @@ class Out(Node):
         self.e: Expr = e
 
     @override
-    def serialize(self):
+    def serialize(self) -> str:
         return f"{self.name} {self.e.serialize()}"
 
 # Module definition
