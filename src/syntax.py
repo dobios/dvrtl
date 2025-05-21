@@ -34,7 +34,7 @@ Body b          ::= [s]* ; out e
 Circuit c       ::= [s]* 
 """
 from typing_extensions import override
-from typing import Optional
+from typing import Optional, TypeAlias
 from functools import reduce
 
 # Abstract node in the AST
@@ -454,7 +454,36 @@ class Module(Stmt):
         self.contract: Optional[tuple[PreCond, PostCond]] = contract
         self.body: tuple[list[Stmt], Optional[Out]] = body
         (self.stmts, self.out) = self.body    
-        
+
+# Arguments can typically be any named thing or unnamed expression
+Arg: TypeAlias = Symbol | Expr | In
+Callable: TypeAlias = Module | Symbol
+
+# Instance of a module or a name of a module
+class Inst(Expr):
+    # Defined by a callable element (either a symbol or a module),
+    #   a module that is being instanciated (same as c or dealiased name),
+    #   and a list of arguments that must be similar to the arguments of the module
+    # @param{c: Callable}: Module or name of a module being instantiated
+    # @param{m: Module}: Module being instantiated (dealiased version of c)
+    # @param{args: list[Arg]}: List of arguments, must be similar to module arguments
+    def __init__(self, c: Callable, m: Module, args: list[Arg]) -> None:
+        super().__init__("inst")
+        # Check if the called symbol is callable
+        if isinstance(c, Symbol):
+            assert isinstance(c.expr, Module), f"Non-Callable instance of Symbol {c.name}"
+
+        # Set fields if instance is valid
+        self.c: Callable = c
+        self.m: Module = c.expr \
+            if isinstance(c, Symbol) and isinstance(c.expr, Module) \
+            else m
+        self.args: list[Arg] = args
+
+        # Check that the given arguments are similar to the ones accepted by the module
+        assert len(self.m.args) == len(self.args), \
+            f"There are {len(self.m.args)} module arguments, but only {len(self.args)} were given!"
+
 
 ################################################
 ## Statement s  ::=
