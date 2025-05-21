@@ -30,11 +30,6 @@ class Node:
     def serialize(self) -> str:
         return self.name
 
-# Arithmetic expression (used in an assertion/assumption)
-class Arith(Node):
-    def __init__(self, name: str) -> None:
-        super().__init__(name)
-
 # Statement in our circuit, these are the core nodes of a design.
 class Stmt(Node):
     def __init__(self, name: str) -> None:
@@ -55,6 +50,125 @@ class Circuit:
             self.body, \
             "" \
         )
+    
+################################################
+## Arithmetic a ::=
+#   a impl a | a + a | a - a | a eq a | 
+#       a xor a | a and a | a or a | e
+################################################
+
+# Arithmetic expression (used in an assertion/assumption)
+class Arith(Node):
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+
+# Arithmetic variadic operator
+class AOp(Arith):
+    # Defined by a name and an arbitrary number of operands
+    # @param{ops: list[Arith]} : a list of operand arithmetic expressions
+    def __init__(self, name: str, ops: list[Arith]) -> None:
+        super().__init__(name)
+        self.ops: list[Arith] = ops
+
+    @override
+    def serialize(self) -> str:
+        operands_s: str = reduce( \
+            lambda acc, s: f"{acc} {s.serialize()}",  \
+            self.ops, "" \
+        )
+        return f"{self.name} {operands_s}"
+
+# Arithmetic binary operator
+class ABinOp(AOp):
+    # Defined by two operands
+    # @param{lhs: Arith} : Left-hand-side operand
+    # @param{rhs: Arith} : Right-hand-side operand
+    # Operands are additionally stored in a list for ease of use
+    def __init__(self, name: str, lhs: Arith, rhs: Arith) -> None:
+        super().__init__(name, [lhs, rhs])
+        self.lhs: Arith = lhs
+        self.rhs: Arith = rhs
+
+    @override
+    def serialize(self) -> str:
+        return f"{self.lhs.serialize()} {self.name} {self.rhs.serialize()}"
+
+# Logical Implication
+# Denotational Semantics:
+#   [[a0 impl a1]] = ¬[[a0]] ∨ [[a1]]
+class Impl(ABinOp):
+    # Defined by two arithmetic operands
+    # @param {ant: Arith}: Antecedent of the implication
+    # @param {cons: Arithm}: Consequent of the implication
+    def __init__(self, ant: Arith, cons: Arith) -> None:
+        super().__init__("impl", ant, cons)
+
+# Arithmetic Unsigned Addition
+# Denotational Semantics:
+#   [[a0 + a1]] = [[a0]] + [[a1]]
+class Add(ABinOp):
+    def __init__(self, name, lhs, rhs):
+        super().__init__(name, lhs, rhs)
+
+# Arithmetic Unsigned Subtraction
+# Denotational Semantics:
+#   [[a0 - a1]] = [[a0]] - [[a1]]
+class Sub(ABinOp):
+    def __init__(self, name, lhs, rhs):
+        super().__init__(name, lhs, rhs)
+
+# Arithmetic Equality
+# Denotational Semantics:
+#   [[ e1 eq e2 ]] = ¬([[e1]] ⊕ [[e2]])
+class Eq(ABinOp):
+    def __init__(self, name, lhs, rhs):
+        super().__init__(name, lhs, rhs)
+
+# Binary Logical Exclusive Or (Xor) operator 
+# Denotational semantics: 
+#   [[ a1 xor 1 ]]  = ¬ [[a1]]
+#   [[ a1 xor a2 ]] = [[a1]] ⊕ [[a2]]
+#
+# Truth Table:
+# v0 | v1 | v0 xor v1
+# ----------------
+# 1   1      0
+# 1   0      1
+# 0   1      1
+# 0   0      0
+class Xor(ABinOp):
+    def __init__(self, lhs, rhs) -> None:
+        super().__init__("xor", lhs, rhs)
+
+# Binary Logical AND operator 
+# Denotational semantics: 
+#   [[ a1 and a2 ]] = [[a1]] ∧ [[a2]]
+#
+# Truth Table:
+# v0 | v1 | v0 and v1
+# ----------------
+# 1   1      1
+# 1   0      0
+# 0   1      0
+# 0   0      0
+class And(ABinOp):
+    def __init__(self, lhs, rhs) -> None:
+        super().__init__("and", lhs, rhs)
+
+# Binary Logical OR operator 
+# Denotational semantics: 
+#   [[ a1 or a2 ]] = [[a1]] ∨ [[a2]]
+#
+# Truth Table:
+# v0 | v1 | v0 or v1
+# ----------------
+# 1   1      1
+# 1   0      1
+# 0   1      1
+# 0   0      0
+class Or(ABinOp):
+    def __init__(self, lhs, rhs) -> None:
+        super().__init__("or", lhs, rhs)
 
 
 ################################################
@@ -99,43 +213,75 @@ class EBinOp(EOp):
     def serialize(self) -> str:
         return f"{self.lhs.serialize()} {self.name} {self.rhs.serialize()}"
 
-# Binary Exclusive Or (Xor) operator 
-# a | b | a xor b
+# Binary Synthesizable Exclusive Or (Xor) operator 
+# Denotational semantics: 
+#   [[ e1 xor 1 ]]  = ¬ [[e1]]
+#   [[ e1 xor e2 ]] = [[e1]] ⊕ [[e2]]
+#
+# Truth Table:
+# v0 | v1 | v0 xor v1
 # ----------------
 # 1   1      0
 # 1   0      1
 # 0   1      1
 # 0   0      0
-class Xor(EBinOp):
+class EXor(EBinOp):
     def __init__(self, lhs, rhs) -> None:
         super().__init__("xor", lhs, rhs)
 
-# Binary AND operator 
-# a | b | a and b
+# Binary Synthesizable AND operator 
+# Denotational semantics: 
+#   [[ e1 and e2 ]] = [[e1]] ∧ [[e2]]
+#
+# Truth Table:
+# v0 | v1 | v0 and v1
 # ----------------
 # 1   1      1
 # 1   0      0
 # 0   1      0
 # 0   0      0
-class And(EBinOp):
+class EAnd(EBinOp):
     def __init__(self, lhs, rhs) -> None:
         super().__init__("and", lhs, rhs)
 
-# Binary OR operator 
-# a | b | a or b
+# Binary Synthesizable OR operator 
+# Denotational semantics: 
+#   [[ e1 or e2 ]] = [[e1]] ∨ [[e2]]
+#
+# Truth Table:
+# v0 | v1 | v0 or v1
 # ----------------
 # 1   1      1
 # 1   0      1
 # 0   1      1
 # 0   0      0
-class Or(EBinOp):
+class EOr(EBinOp):
     def __init__(self, lhs, rhs) -> None:
         super().__init__("or", lhs, rhs)
 
 
+# Multiplexer (conditional selector)
+# Denotational semantics: 
+#   [[ mux e1 e2 e3 ]] = ([[e1]] ∧ [[e2]]) ∨ (¬ [[e1]] ∧ [[e3]])
 class Mux(EOp):
+    # Defined by 3 operands
+    # @param{s: Expr}   : (e1) Selector signal, decides which operand is selected 
+    # @param{tOp: Expr} : (e2) Selected operand if [|s|] = 1 
+    # @param{fOp: Expr} : (e3) Selected operand if [|s|] = 0 
     def __init__(self, s: Expr, tOp: Expr, fOp: Expr) -> None:
         super().__init__("mux", [s, tOp, fOp])
+        self.s: Expr = s
+        self.tOp: Expr = tOp
+        self.fOp: Expr = fOp
+
+# Symbol refering to either a register or a name binding in our context
+class Symbol(Expr):
+    # Defined by a symbol name and a linked expression
+    # @param{sym: str}: The name given to the symbol
+    # @param{stmt: Stmt}: The statement that declared this symbol
+    def __init__(self, sym: str, stmt: Stmt) -> None:
+        super().__init__(sym)
+        self.expr: Stmt = stmt
 
 
 ################################################
@@ -152,6 +298,8 @@ class Value(Expr):
         return int(self.name)
 
 # Zero value: represents a 0 bit
+# Denotational Semantics:
+#   [[0]] = 0
 class Zero(Value):
     def __init__(self) -> None:
         super().__init__("0")
@@ -161,6 +309,8 @@ class Zero(Value):
         return 0
     
 # One value: represents a 1 bit  
+# Denotational Semantics:
+#   [[1]] = 1
 class One(Value):
     def __init__(self) -> None:
         super().__init__("1")
@@ -180,11 +330,15 @@ class Order(Node):
         super().__init__(name)
 
 # Skip: result of a successful assertion/assumptio
+# Denotational Semantics:
+#   [[skip]] = _
 class Skip(Order):
     def __init__(self) -> None:
         super().__init__("skip")
     
 # Fail: result of a failed assertion 
+# Denotational Semantics (in KAT):
+#   [[fail]] = 0?
 class Fail(Value):
     def __init__(self) -> None:
         super().__init__("fail")
