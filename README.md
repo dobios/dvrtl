@@ -1,2 +1,2 @@
 # contRTL
-Formalized minimal RTL Language for Verification. Purposefully mimics the CIRCT Core dialects.
+Formalized minimal RTL Language for Deductive Verification.
