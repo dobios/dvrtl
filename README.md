@@ -22,4 +22,45 @@ Body b          ::= [s]* ; out e
 Circuit c       ::= [s]* 
 ```
 
+## Example -- Untyped (1-bit)
+Here is a simple example of how to write a 2-bit adder using untyped contRTL (untyped leads to everything being 1-bit). 
+```
+sum = mod (a_in, b_in, c_in) [
+    req 1
+    ens res eq (a_in + b_in + c_in)
+]{
+    axb = a_in xor b_in
+    out c_in xor axb
+}
+carry = mod (a_in, b_in, c_in){
+    axb = a_in xor b_in
+    anb = a_in and b_in
+    out anb or (c_in and axb)
+}
+add2_0 = mod (a1, a0, b1, b0) [
+    req 1
+    ens res eq (a0 + b0)
+] {
+    out sum(a0, b0, 0)
+}
+add2_1 = mod (a1, a0, b1, b0) [
+    req 1
+    ens res eq ((a0 and b0) + (a1 + b1))
+]{
+    c_0 = carry(a0, b0, 0)
+    out sum(a1, b1, c_0) 
+}
+carry2 = mod (a1, a0, b1, b0) [
+    req 1
+    ens res eq ((a0 and b0) + (a1 and b1))
+]{
+    carry0 = carry(a0, b0, 0)
+    out carry(a1, b1, carry0) 
+}
+bit0 = add2_0(0,1,0,1)
+bit1 = add2_1(0,1,0,1)
+overflow = carry2(0,1,0,1)
+
+assert (bit0 eq 0) and (bit1 eq 1) and (overflow eq 0)
+```
 
