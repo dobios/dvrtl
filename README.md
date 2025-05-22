@@ -3,6 +3,12 @@ Formalized minimal RTL Language for Deductive Verification.
 
 DVRTL is a lightweight front-end for the CIRCT compiler, augmented to be used as a deductive verification language.
 
+The language is implemented using `MyPy` with parallel parsing (enabled by the declarative structure of the language), so hopefully the performance shouldn't be too bad. 
+
+The language supports two backends: 
+- `circt-bmc`: The integrated bounded model-checker in the CIRCT compiler. 
+- `btor2-opt`: A python-based compiler for the btor2 format the runs on `btormc`.   
+
 ## Syntax 
 The syntax was defined to closely mimic the abstraction level of the CIRCT core IR, while also being slightly more human-friendly to write than an MLIR program. 
 
