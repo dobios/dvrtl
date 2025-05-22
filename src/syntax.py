@@ -59,9 +59,13 @@ class Symbol(Node):
     # Defined by a symbol name and a linked expression
     # @param{sym: str}: The name given to the symbol
     # @param{stmt: Stmt}: The statement that declared this symbol
-    def __init__(self, sym: str, stmt: Stmt) -> None:
+    def __init__(self, sym: str, stmt: Optional[Stmt]) -> None:
         super().__init__(sym)
-        self.expr: Stmt = stmt
+        self.expr: Optional[Stmt] = stmt
+
+    @override
+    def __eq__(self, value) -> bool:
+        return isinstance(value, Symbol) and self.name == value.name
 
 # Arithmetic expression (used in an assertion/assumption)
 class Arith(Node):
@@ -78,8 +82,11 @@ class Circuit:
     # Circuits are defined by a list of statements
     # @param{body: list[Stmt]} : The body of our circuit
     #   defined as a list of statements
-    def __init__(self, body : list[Stmt]) -> None:
+    # @param{context: list[Symbol]}: The global context of 
+    #   the circuit that binds all names to valid statements
+    def __init__(self, body : list[Stmt], context: list [Symbol]) -> None:
         self.body: list[Stmt] = body
+        self.context: list[Symbol] = context
 
     # Returns a full serialization of our circuit
     def serialize(self) -> str:
@@ -371,6 +378,14 @@ class Mux(EOp):
         self.tOp: Expr = tOp
         self.fOp: Expr = fOp
 
+# A name referencing a statement in the context.
+# Semantics (for a context Γ):
+#     Γ [x] = e
+# ---------------------
+#   Γ ⊢ [[x]] = [[e]] 
+class Var(Expr):
+    def __init__(self, name) -> None:
+        super().__init__(name)
 
 ################################################
 # Modules and Contracts

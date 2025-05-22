@@ -37,18 +37,56 @@ The AST is implemented in syntax.py.
 """
 
 from syntax import *
+import multiprocessing
 
+# Parser for the contRTL language.
 class Parser:
+    # Maintains 3 fields during parsing
+    # @field{context: list[Symbol]}: A context containing
+    #   all of the name bindings in the program.
+    #   Given that our language is declarative, we allow for
+    #   def-after-use, meaning that all names in the program are valid
+    #   in all locations.
+    # @field{circuit: Circuit}: The circuit resulting from the parse.
+    # @field{done: Bool}: A flag signaling the state of the parsing process
     def __init__(self) -> None:
         self.context: list[Symbol] = []
-        self.circuit: Circuit = Circuit([])
+        self.circuit: Circuit = Circuit([], [])
+        self.done: bool = False
 
+    # Clears the parser, allowing it to parse again
+    def clear(self) -> None:
+        self.context = []
+        self.circuit = Circuit([], [])
+        self.done = False
+
+    # Parse a single statement in the circuit
     def parse(self, line: str) -> None:
         pass
+    
+    # Parses a given circuit implementation in parallel
+    def parsePar(self, c: str) -> None:
+        # Only parse once
+        assert not self.done, "Parse is already completed!"
+        
+        # Create a thread pool
+        pool = multiprocessing.Pool()
 
-    def parseAll(self, c: str) -> None:
-        pass
+        # Parse all lines in parallel
+        pool.map( \
+            self.parse, \
+            c.strip('\n').split(';') \
+        )
 
+    # Parse a given circuit implementation sequentially
+    def parseSeq(self, c: str) -> None: 
+        # Only parse once
+        assert not self.done, "Parse is already completed!"
+
+        # Parse all lines sequentially
+        map(self.parse, c.strip('\n').split(';'))
+
+    # Fully serializes a given circuit
     def serialize(self) -> str:
         return self.circuit.serialize()
     
