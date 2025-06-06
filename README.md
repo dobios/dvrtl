@@ -1,7 +1,5 @@
 # Work in Progress -- DVRTL
-WIP Formalized minimal RTL Language for Deductive Verification. 
-
-The goal of DVRTL is to be a formalized lightweight front-end for the CIRCT compiler, augmented to be used as a deductive verification language.
+WIP
 
 The language is implemented using `MyPy` with Lark as the parser generator.
 
@@ -18,7 +16,7 @@ Expression e    ::=	e xor e | e and e | e or e | mux e e e |
 Arithmetic a    ::= a impl a | a + a | a - a | a eq a |
                         a xor a | a and a | a or a | e
 Contract h      ::= res | a
-Module m        ::= mod(x, ...,x)[req a; ens h;]{b} | mod(x, ...,x){b}
+Module m        ::= mod(x, ...,x)[req a; ens h]{b} | mod(x, ...,x){b}
 Statement s     ::= r -> v, e | x = e | x = m | assert a | assume a | m
 Body b          ::= [s;]* out e;
 Circuit c       ::= [s;]* 
