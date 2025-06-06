@@ -1,13 +1,9 @@
-# DVRTL
-Formalized minimal RTL Language for Deductive Verification. 
+# Work in Progress -- DVRTL
+WIP Formalized minimal RTL Language for Deductive Verification. 
 
-DVRTL is a lightweight front-end for the CIRCT compiler, augmented to be used as a deductive verification language.
+The goal of DVRTL is to be a formalized lightweight front-end for the CIRCT compiler, augmented to be used as a deductive verification language.
 
-The language is implemented using `MyPy` with parallel parsing (enabled by the declarative structure of the language), so hopefully the performance shouldn't be too bad. 
-
-The language supports two backends: 
-- `circt-bmc`: The integrated bounded model-checker in the CIRCT compiler. 
-- `btor2-opt`: A python-based compiler for the btor2 format the runs on `btormc`.   
+The language is implemented using `MyPy` with Lark as the parser generator.
 
 ## Syntax 
 The syntax was defined to closely mimic the abstraction level of the CIRCT core IR, while also being slightly more human-friendly to write than an MLIR program. 
@@ -22,10 +18,10 @@ Expression e    ::=	e xor e | e and e | e or e | mux e e e |
 Arithmetic a    ::= a impl a | a + a | a - a | a eq a |
                         a xor a | a and a | a or a | e
 Contract h      ::= res | a
-Module m        ::= mod(x, ...,x)[req a; ens h]{b} | mod(x, ...,x){b}
+Module m        ::= mod(x, ...,x)[req a; ens h;]{b} | mod(x, ...,x){b}
 Statement s     ::= r -> v, e | x = e | x = m | assert a | assume a | m
-Body b          ::= [s]* ; out e
-Circuit c       ::= [s]* 
+Body b          ::= [s;]* out e;
+Circuit c       ::= [s;]* 
 ```
 
 ## Example -- Untyped (1-bit)
