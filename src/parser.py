@@ -36,71 +36,37 @@ Circuit c       ::= [s]*
 The AST is implemented in syntax.py.
 """
 
-from syntax import *
-import multiprocessing
+#from syntax import *
+from lark import Lark, ParseTree
 
 # Parser for the contRTL language.
 class Parser:
-    # Maintains 3 fields during parsing
-    # @field{context: list[Symbol]}: A context containing
-    #   all of the name bindings in the program.
-    #   Given that our language is declarative, we allow for
-    #   def-after-use, meaning that all names in the program are valid
-    #   in all locations.
-    # @field{circuit: Circuit}: The circuit resulting from the parse.
-    # @field{done: Bool}: A flag signaling the state of the parsing process
+    # Wrapper around a Lark parser
     def __init__(self) -> None:
-        self.context: list[Symbol] = []
-        self.circuit: Circuit = Circuit([], [])
-        self.done: bool = False
+        self.parser: Lark
+        with open("src/dvrtl.lark") as gramm:
+            self.parser = Lark(gramm.read())
+        self.tree: ParseTree = None
 
-    # Clears the parser, allowing it to parse again
-    def clear(self) -> None:
-        self.context = []
-        self.circuit = Circuit([], [])
-        self.done = False
+    # parses a given input
+    def parse(self, inp: str) -> None:
+        self.tree = self.parser.parse(inp)
 
-    # Parse a single statement in the circuit
-    def parse(self, line: str) -> None:
-        pass
+    # prints out the current parse tree
+    # fails is nothing has been parsed yet
+    def print_tree(self) -> None:
+        assert self.tree is not None, "Must parse before printing!"
+        print(self.tree.pretty())
     
-    # Parses a given circuit implementation in parallel
-    def parsePar(self, c: str) -> None:
-        # Only parse once
-        assert not self.done, "Parse is already completed!"
-        
-        # Create a thread pool
-        pool = multiprocessing.Pool()
+# Static API for parsing
+def parse(input: str, isfilename: bool = False) -> Parser:
+    p: Parser = Parser()
+    if isfilename:
+        with open(input) as inp:
+            p.parse(inp.read())
+    else:
+        p.parse(input)
+    return p    
 
-        # Parse all lines in parallel
-        pool.map( \
-            self.parse, \
-            c.strip('\n').split(';') \
-        )
-
-    # Parse a given circuit implementation sequentially
-    def parseSeq(self, c: str) -> None: 
-        # Only parse once
-        assert not self.done, "Parse is already completed!"
-
-        # Parse all lines sequentially
-        map(self.parse, c.strip('\n').split(';'))
-
-    # Fully serializes a given circuit
-    def serialize(self) -> str:
-        return self.circuit.serialize()
-    
-    #######################################
-    # visitors
-    #######################################
-
-    def parseReg(self, r: str) -> Reg:
-        return Reg("", Value(""), Expr(""))
-
-    def parseExpr(self, e: str) -> Expr:
-        return Expr("")
-
-    def parseStmt(self, s: str) -> Stmt:
-        return Stmt("")
 
 

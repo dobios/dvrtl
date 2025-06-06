@@ -1,0 +1,5 @@
+A  -> 0, C xor (a xor b)
+Ap -> 0, A
+B  -> 1, B
+C  -> 0, (A and B) or (C and (A xor B))
+assert A xor Ap

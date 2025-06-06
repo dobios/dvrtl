@@ -1,24 +1,26 @@
 { pkgs ? import <nixpkgs> { } }:
 
 let
-  pythonEnv = pkgs.python3.withPackages(ps: with ps; [ 
-    black  
-    build 
-    click 
-    colorama 
-    isort 
-    lexid 
-    looseversion 
-    mypy-extensions 
-    packaging 
-    pathspec 
-    pip-tools 
-    platformdirs 
-    pyproject-hooks 
-    toml 
-    tomli 
-    typing-extensions 
-    wheel
+  pythonEnv = pkgs.python3.withPackages(ps: [ 
+    ps.black  
+    ps.build 
+    ps.click 
+    ps.colorama 
+    ps.isort 
+    ps.lexid 
+    ps.looseversion 
+    ps.mypy-extensions 
+    ps.packaging 
+    ps.pathspec 
+    ps.pip-tools 
+    ps.platformdirs 
+    ps.pyproject-hooks 
+    ps.toml 
+    ps.tomli 
+    ps.typing-extensions 
+    ps.wheel
+    ps.mypy
+    ps.lark
   ]);
 
 in

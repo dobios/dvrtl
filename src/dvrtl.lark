@@ -1,0 +1,80 @@
+// Registers r     Variables x
+// Value v         ::= 0 | 1
+// Order o         ::= skip | fail
+// Expression e    ::=	e xor e | e and e | e or e | mux e e e |
+//                         v | r | x | m (e,...,e) | x (e,...,e)
+// Arithmetic a    ::= a impl a | a + a | a - a | a eq a |
+//                         a xor a | a and a | a or a | e
+// Contract h      ::= res | a
+// Module m        ::= mod(x, ...,x)[req a; ens h]{b} | mod(x, ...,x){b}
+// Statement s     ::= r -> v, e | x = e | x = m | assert a | assume a | m
+// Body b          ::= [s]* ; out e
+// Circuit c       ::= [s]* 
+
+// Lark imports
+%import common.CNAME
+%import common.ESCAPED_STRING
+%import common.WS
+
+ESCAPED_IDENTIFIER: /\\([^\s]+)/
+COMMENT: "//" /[^\n]*/ NEWLINE
+NEWLINE: "\n"
+MULTILINE_COMMENT: /\/\*(\*(?!\/)|[^*])*\*\//
+
+%ignore WS
+%ignore COMMENT
+%ignore MULTILINE_COMMENT
+%ignore NEWLINE
+
+?identifier: IDENTIFIER
+
+IDENTIFIER: CNAME
+          | ESCAPED_IDENTIFIER
+
+// Argument list
+?list_of_variables: identifier ("," identifier)*
+?list_of_expr: expr ("," expr)*
+
+// Values
+bit: "0" | "1"
+
+// Synthesizable language
+?expr: expr "xor" expr                  -> xor
+    | expr "and" expr                   -> and
+    | expr "or" expr                    -> or
+    | "mux" expr expr expr              -> mux
+    | "(" expr ")"                      -> scoped_expr
+    | identifier "(" list_of_expr ")"   -> call // module instance
+    | bit | identifier 
+
+// Assertion language 
+?arith: arith "impl" arith          -> impl
+    | arith "xor" arith             -> arith_xor
+    | arith "and" arith             -> arith_and
+    | arith "or" arith              -> arith_or
+    | arith "+" arith               -> add
+    | arith "-" arith               -> sub
+    | arith "eq" arith              -> sub
+    | "not" arith                   -> not
+    | "(" arith ")"                 -> scoped_arith
+    | expr
+
+// Contract language (allows for symbolic results)
+?post: "res" | arith
+?precond: "req" arith 
+?postcond: "ens" post 
+?contract: "[" precond (";")? postcond "]"
+
+// Module definition
+?out: "out" expr 
+?body: "{" (stmt)* out "}"
+?module: "mod" "(" list_of_variables ")" contract? body      
+
+?stmt: identifier "->" bit "," expr      -> register     
+    | identifier "=" (expr | module)     -> bind         // name binding
+    | "assert" arith                     -> assert    
+    | "assume" arith                     -> assume   
+    | module                             -> ano_module   // anonymous modules
+    | stmt ";" stmt                      -> stmt_seq
+
+start: stmt*
