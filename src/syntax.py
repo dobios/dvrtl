@@ -279,6 +279,20 @@ class Or(ABinOp):
     def __init__(self, lhs, rhs) -> None:
         super().__init__("or", lhs, rhs)
 
+# Binary Logical NOT operator 
+# Denotational semantics: 
+#   [[ not a ]] = ¬[[a1]]
+#
+# Truth Table:
+# v0 | not v0
+# ----------------
+# 0        1
+# 1        0
+class Not(AOp):
+    def __init__(self, op):
+        super().__init__("not", [op])
+        self.op = op
+
 
 ################################################
 ## Expression e ::=	
@@ -392,7 +406,7 @@ class Var(Expr):
 ################################################
 
 # Abstract Contract node
-class Contract(Node):
+class ContractOp(Node):
     # Defined by a keyword and a condition
     # @param{cond: Arithm}: The condition that will be checked
     #   as either a pre- or a post-condition
@@ -407,16 +421,30 @@ class Contract(Node):
 # Postcondition arithmetic expression
 # Only valid in a module definition
 # Can contain a Res reference
-class PostCond(Contract):
+class PostCond(ContractOp):
     def __init__(self, cond: Arith) -> None:
         super().__init__("ens", cond)
     
 # Precondition arithmetic expression
 # Only valid in a module definition
 # Can contain a Res reference
-class PreCond(Contract):
+class PreCond(ContractOp):
     def __init__(self, cond: Arith):
         super().__init__("req", cond)
+
+# Contract block containing both a precondition and a postcondition
+class Contract(Node):
+    # Defined by a precondition and a postcondition
+    # @param{pre: PreCond}: Constraints on the inputs of the module
+    # @param{post: PostCond}: Contraints on the outputs of the module
+    def __init__(self, pre: PreCond, post: PostCond) -> None:
+        super().__init__("contract")
+        self.pre: PreCond = pre
+        self.post: PostCond = post
+
+    @override
+    def serialize(self) -> str:
+        return f"[{self.pre.serialize()}; {self.post.serialize()}]"
 
 # Special result reference
 # Only valid inside of a postcondition
@@ -448,26 +476,42 @@ class Out(Node):
     @override
     def serialize(self) -> str:
         return f"{self.name} {self.e.serialize()}"
+    
+# Module Body definition
+class Body(Node):
+    # the body of the module, defined by:
+    #   {stmts: list[Stmt]}: A list of statements defining names used in the output expression
+    #   [Optional]{out: Out}: Output expression of the module
+    #      --> Only omitted in the case where the module is at the top-level
+    def __init__(self, stmts: list[Stmt], out: Optional[Out]):
+        super().__init__("body")
+        self.stmts: list[Stmt] = stmts
+        self.out: Optional[Out] = out
+
+    @override
+    def serialize(self) -> str:
+        return reduce( \
+                lambda acc, stmt: acc + f"\t {stmt.serialize()}\n",\
+                self.stmts, "{\n" \
+            ) + "}"
+
 
 # Module definition
 class Module(Stmt):
     # Defined by a list of input names, an optional contract, and a body
     # @param{args: list[In]}: list of input names
     # @param[Optional]{contract}: Pre-condition and Post-condition specifying this module
-    # @param{body}: the body of the module, defined by:
-    #   {stmts: list[Stmt]}: A list of statements defining names used in the output expression
-    #   [Optional]{out: Out}: Output expression of the module
-    #      --> Only omitted in the case where the module is at the top-level
+    # @param{body}: the body of the module
     def __init__( \
             self, \
             args: list[In], \
-            contract: Optional[tuple[PreCond, PostCond]], \
-            body: tuple[list[Stmt], Optional[Out]] \
+            contract: Optional[ContractOp], \
+            body: Body \
     ) -> None:
         super().__init__("mod")
         self.args: list[In] = args
-        self.contract: Optional[tuple[PreCond, PostCond]] = contract
-        self.body: tuple[list[Stmt], Optional[Out]] = body
+        self.contract: Optional[ContractOp] = contract
+        self.body: Body = body
         (self.stmts, self.out) = self.body    
 
 # Arguments can typically be any named thing or unnamed expression
@@ -482,7 +526,7 @@ class Inst(Expr):
     # @param{c: Callable}: Module or name of a module being instantiated
     # @param{m: Module}: Module being instantiated (dealiased version of c)
     # @param{args: list[Arg]}: List of arguments, must be similar to module arguments
-    def __init__(self, c: Callable, m: Module, args: list[Arg]) -> None:
+    def __init__(self, c: Callable, args: list[Arg]) -> None:
         super().__init__("inst")
         # Check if the called symbol is callable
         if isinstance(c, Symbol):
@@ -490,9 +534,11 @@ class Inst(Expr):
 
         # Set fields if instance is valid
         self.c: Callable = c
-        self.m: Module = c.expr \
-            if isinstance(c, Symbol) and isinstance(c.expr, Module) \
-            else m
+        # Ideally we could also store the module here, but maybe that will
+        # have to be lookedup when evaluating the instance sadly.
+        # self.m: Module = c.expr \
+        #     if isinstance(c, Symbol) and isinstance(c.expr, Module) \
+        #     else m
         self.args: list[Arg] = args
 
         # Check that the given arguments are similar to the ones accepted by the module
