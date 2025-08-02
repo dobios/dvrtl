@@ -86,7 +86,7 @@ bit: "0"    -> zero
 ?contract: "[" precond (";")? postcond "]"
 
 // Module definition
-?out: "out" expr 
+?out: "out" expr -> out
 ?body: "{" (stmt)* out "}"
 ?module: "mod" "(" list_of_variables ")" contract? body      
 

@@ -38,32 +38,32 @@ class BTORTestParser(unittest.TestCase):
         parser: Parser = parse("tests/dv/mini.dv", isfilename=True)
 
         expected_tree: str = """start
-  register
+  reg
     A
-    bit
-    xor
+    zero
+    expr_xor
       C
       scoped_expr
-        xor
+        expr_xor
           a
           b
-  register
+  reg
     B
-    bit
+    one
     B
-  register
+  reg
     C
-    bit
-    or
+    zero
+    expr_or
       scoped_expr
-        and
+        expr_and
           A
           B
       scoped_expr
-        and
+        expr_and
           C
           scoped_expr
-            xor
+            expr_xor
               A
               B
 """
@@ -75,39 +75,39 @@ class BTORTestParser(unittest.TestCase):
     def test_parse_tree_assert(self):
         parser: Parser = parse("tests/dv/assert.dv", isfilename=True)
         expected_tree: str = """start
-  register
+  reg
     A
-    bit
-    xor
+    zero
+    expr_xor
       C
       scoped_expr
-        xor
+        expr_xor
           a
           b
-  register
+  reg
     Ap
-    bit
+    zero
     A
-  register
+  reg
     B
-    bit
+    one
     B
-  register
+  reg
     C
-    bit
-    or
+    zero
+    expr_or
       scoped_expr
-        and
+        expr_and
           A
           B
       scoped_expr
-        and
+        expr_and
           C
           scoped_expr
-            xor
+            expr_xor
               A
               B
-  assert
+  stmt_assert
     arith_xor
       A
       Ap
@@ -130,12 +130,13 @@ class BTORTestParser(unittest.TestCase):
       body
         bind
           axb
-          xor
+          expr_xor
             a_in
             b_in
-        xor
-          c_in
-          axb
+        out
+          expr_xor
+            c_in
+            axb
   bind
     carry
     module
@@ -146,20 +147,21 @@ class BTORTestParser(unittest.TestCase):
       body
         bind
           axb
-          xor
+          expr_xor
             a_in
             b_in
         bind
           anb
-          and
+          expr_and
             a_in
             b_in
-        or
-          anb
-          scoped_expr
-            and
-              c_in
-              axb
+        out
+          expr_or
+            anb
+            scoped_expr
+              expr_and
+                c_in
+                axb
   bind
     add2_0
     module
@@ -168,12 +170,13 @@ class BTORTestParser(unittest.TestCase):
         a0
         b1
         b0
-      call
-        sum
-        list_of_expr
-          a0
-          b0
-          bit
+      out
+        call
+          sum
+          list_of_expr
+            a0
+            b0
+            zero
   bind
     add2_1
     module
@@ -190,13 +193,14 @@ class BTORTestParser(unittest.TestCase):
             list_of_expr
               a0
               b0
-              bit
-        call
-          sum
-          list_of_expr
-            a1
-            b1
-            c_0
+              zero
+        out
+          call
+            sum
+            list_of_expr
+              a1
+              b1
+              c_0
   bind
     carry2
     module
@@ -213,55 +217,56 @@ class BTORTestParser(unittest.TestCase):
             list_of_expr
               a0
               b0
-              bit
-        call
-          carry
-          list_of_expr
-            a1
-            b1
-            carry0
+              zero
+        out
+          call
+            carry
+            list_of_expr
+              a1
+              b1
+              carry0
   bind
     bit0
     call
       add2_0
       list_of_expr
-        bit
-        bit
-        bit
-        bit
+        zero
+        one
+        zero
+        one
   bind
     bit1
     call
       add2_1
       list_of_expr
-        bit
-        bit
-        bit
-        bit
+        zero
+        one
+        zero
+        one
   bind
     overflow
     call
       carry2
       list_of_expr
-        bit
-        bit
-        bit
-        bit
-  assert
+        zero
+        one
+        zero
+        one
+  stmt_assert
     arith_and
       arith_and
         scoped_arith
-          sub
+          eq
             bit0
-            bit
+            zero
         scoped_arith
-          sub
+          eq
             bit1
-            bit
+            one
       scoped_arith
-        sub
+        eq
           overflow
-          bit
+          zero
 """
         self.assertEqual(parser.tree.pretty(), expected_tree)
 
@@ -279,8 +284,8 @@ class BTORTestParser(unittest.TestCase):
         b_in
         c_in
       contract
-        bit
-        sub
+        one
+        eq
           res
           scoped_arith
             add
@@ -291,12 +296,13 @@ class BTORTestParser(unittest.TestCase):
       body
         bind
           axb
-          xor
+          expr_xor
             a_in
             b_in
-        xor
-          c_in
-          axb
+        out
+          expr_xor
+            c_in
+            axb
   bind
     carry
     module
@@ -307,20 +313,21 @@ class BTORTestParser(unittest.TestCase):
       body
         bind
           axb
-          xor
+          expr_xor
             a_in
             b_in
         bind
           anb
-          and
+          expr_and
             a_in
             b_in
-        or
-          anb
-          scoped_expr
-            and
-              c_in
-              axb
+        out
+          expr_or
+            anb
+            scoped_expr
+              expr_and
+                c_in
+                axb
   stmt_seq
     stmt_seq
       stmt_seq
@@ -333,19 +340,20 @@ class BTORTestParser(unittest.TestCase):
               b1
               b0
             contract
-              bit
-              sub
+              one
+              eq
                 res
                 scoped_arith
                   add
                     a0
                     b0
-            call
-              sum
-              list_of_expr
-                a0
-                b0
-                bit
+            out
+              call
+                sum
+                list_of_expr
+                  a0
+                  b0
+                  zero
         bind
           add2_1
           module
@@ -355,8 +363,8 @@ class BTORTestParser(unittest.TestCase):
               b1
               b0
             contract
-              bit
-              sub
+              one
+              eq
                 res
                 scoped_arith
                   add
@@ -376,13 +384,14 @@ class BTORTestParser(unittest.TestCase):
                   list_of_expr
                     a0
                     b0
-                    bit
-              call
-                sum
-                list_of_expr
-                  a1
-                  b1
-                  c_0
+                    zero
+              out
+                call
+                  sum
+                  list_of_expr
+                    a1
+                    b1
+                    c_0
       bind
         carry2
         module
@@ -392,8 +401,8 @@ class BTORTestParser(unittest.TestCase):
             b1
             b0
           contract
-            bit
-            sub
+            one
+            eq
               res
               scoped_arith
                 add
@@ -413,55 +422,56 @@ class BTORTestParser(unittest.TestCase):
                 list_of_expr
                   a0
                   b0
-                  bit
-            call
-              carry
-              list_of_expr
-                a1
-                b1
-                carry0
+                  zero
+            out
+              call
+                carry
+                list_of_expr
+                  a1
+                  b1
+                  carry0
     bind
       bit0
       call
         add2_0
         list_of_expr
-          bit
-          bit
-          bit
-          bit
+          zero
+          one
+          zero
+          one
   bind
     bit1
     call
       add2_1
       list_of_expr
-        bit
-        bit
-        bit
-        bit
+        zero
+        one
+        zero
+        one
   bind
     overflow
     call
       carry2
       list_of_expr
-        bit
-        bit
-        bit
-        bit
-  assert
+        zero
+        one
+        zero
+        one
+  stmt_assert
     arith_and
       arith_and
         scoped_arith
-          sub
+          eq
             bit0
-            bit
+            zero
         scoped_arith
-          sub
+          eq
             bit1
-            bit
+            one
       scoped_arith
-        sub
+        eq
           overflow
-          bit
+          zero
 """
         self.assertEqual(parser.tree.pretty(), expected_tree)
 
