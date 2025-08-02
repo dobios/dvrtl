@@ -38,25 +38,32 @@ The AST is implemented in syntax.py.
 
 #from syntax import *
 from lark import Lark, ParseTree
+from .transformer import DVRTLTransformer
+from .syntax import *
 
 # Parser for the contRTL language.
 class Parser:
     # Wrapper around a Lark parser
     def __init__(self) -> None:
         self.parser: Lark
+        self.ast: Circuit = None
+
         with open("src/dvrtl.lark") as gramm:
             self.parser = Lark(gramm.read())
         self.tree: ParseTree = None
 
-    # parses a given input
-    def parse(self, inp: str) -> None:
+    # parses a given input and return an AST
+    def parse(self, inp: str) -> Circuit:
         self.tree = self.parser.parse(inp)
+        self.ast = DVRTLTransformer().transform(self.tree)
+        return self.ast
 
     # prints out the current parse tree
     # fails is nothing has been parsed yet
     def print_tree(self) -> None:
         assert self.tree is not None, "Must parse before printing!"
         print(self.tree.pretty())
+
     
 # Static API for parsing
 def parse(input: str, isfilename: bool = False) -> Parser:

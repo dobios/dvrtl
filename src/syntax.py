@@ -66,6 +66,10 @@ class Symbol(Node):
     @override
     def __eq__(self, value) -> bool:
         return isinstance(value, Symbol) and self.name == value.name
+    
+    def toString(self) -> str:
+        return f"{self.name}: {self.expr}"
+
 
 # Arithmetic expression (used in an assertion/assumption)
 class Arith(Node):
@@ -208,15 +212,15 @@ class Impl(ABinOp):
 # Denotational Semantics:
 #   [[a0 + a1]] = [[a0]] + [[a1]]
 class Add(ABinOp):
-    def __init__(self, name, lhs, rhs):
-        super().__init__(name, lhs, rhs)
+    def __init__(self, lhs, rhs):
+        super().__init__('+', lhs, rhs)
 
 # Arithmetic Unsigned Subtraction
 # Denotational Semantics:
 #   [[a0 - a1]] = [[a0]] - [[a1]]
 class Sub(ABinOp):
-    def __init__(self, name, lhs, rhs):
-        super().__init__(name, lhs, rhs)
+    def __init__(self, lhs, rhs):
+        super().__init__('-', lhs, rhs)
 
 # Bitwise Equality
 # Denotational Semantics:
@@ -230,8 +234,8 @@ class Sub(ABinOp):
 # 0   1      0
 # 0   0      1
 class Eq(ABinOp):
-    def __init__(self, name, lhs, rhs):
-        super().__init__(name, lhs, rhs)
+    def __init__(self, lhs, rhs):
+        super().__init__("eq", lhs, rhs)
 
 # Binary Logical Exclusive Or (Xor) operator 
 # Denotational semantics: 
@@ -511,8 +515,7 @@ class Module(Stmt):
         super().__init__("mod")
         self.args: list[In] = args
         self.contract: Optional[ContractOp] = contract
-        self.body: Body = body
-        (self.stmts, self.out) = self.body    
+        self.body: Body = body 
 
 # Arguments can typically be any named thing or unnamed expression
 Arg: TypeAlias = Symbol | Expr | In
@@ -536,9 +539,9 @@ class Inst(Expr):
         self.c: Callable = c
         # Ideally we could also store the module here, but maybe that will
         # have to be lookedup when evaluating the instance sadly.
-        # self.m: Module = c.expr \
-        #     if isinstance(c, Symbol) and isinstance(c.expr, Module) \
-        #     else m
+        self.m: Module = c.expr \
+             if isinstance(c, Symbol) and isinstance(c.expr, Module) \
+             else c
         self.args: list[Arg] = args
 
         # Check that the given arguments are similar to the ones accepted by the module

@@ -33,7 +33,7 @@ Statement s     ::= r -> v, e | x = e | x = m | assert a | assume a | m
 Body b          ::= [s]* ; out e
 Circuit c       ::= [s]* 
 
-The AST is implemented in syntax.py and dvrtl.lark
+The AST is implemented in syntax.py and parse tree in dvrtl.lark/parser.py
 """
 
 from lark import Transformer
@@ -42,111 +42,197 @@ from .syntax import *
 ## Transforms a parse tree into a DVRTL AST
 ## Straightforward transformation, little comments needed
 class DVRTLTransformer(Transformer):
+    @override
+    def __init__(self, visit_tokens = True):
+        super().__init__(visit_tokens)
+        self.context: list[Symbol] = []
+
+    ## All methods here are lark tranformer visitors of the form node(self, children: list[node])
+
     ## Base elements
-    def identifier(self, id):
-        return Symbol(id[1:-1], None)
+    def identifier(self, c):
+        (id,) = c 
+        # Check context for content
+        ref: Symbol = [s for s in self.context if s == Symbol(id[1:-1], None)][0]
+        return ref
     
-    def list_of_variables(self, id, l_id):
-        return list(id).append(list(l_id))
+    def list_of_variables(self, c):
+        # Unpack children
+        (id, l_id) = (c[0][1:-1], c[1:])
+        return list(id).append(l_id)
     
-    def list_of_expr(self, e, l_e):
-        return list(e).append(list(l_e))
+    def list_of_expr(self, c):
+        # unpack children
+        (e, l_e) = (c[0], c[1:])
+        return [e].append(l_e)
     
-    def zero(self):
+    def zero(self, c):
         return Zero()
     
-    def one(self):
+    def one(self, c):
         return One()
     
     ## Expressions (synthesizable language)
-    def expr_xor(self, e0, e1):
+    def expr_xor(self, c):
+        # unpack children
+        (e0, e1,) = c
         return EXor(e0, e1)
     
-    def expr_and(self, e0, e1):
+    def expr_and(self, c):
+        # unpack children
+        (e0, e1,) = c
         return EAnd(e0, e1)
     
-    def expr_or(self, e0, e1):
+    def expr_or(self, c):
+        # unpack children
+        (e0, e1,) = c
         return EOr(e0, e1)
     
-    def mux(self, s, e0, e1):
+    def mux(self, c):
+        # unpack children
+        (s, e0, e1,) = c
         return Mux(s, e0, e1)
     
-    def scoped_expr(self, e):
+    def scoped_expr(self, c):
+        (e,) = c
         return e
     
-    def call(self, id, l_e):
-        return Inst(id, l_e)
+    def call(self, c):
+        (id, l_e) = (c[0], c[1:]) 
+        # print(id)
+        # print(list(map(lambda s: s.toString(), self.context)))
+        mod: Module = [ \
+            s.expr for s in self.context \
+            if s.name == id and isinstance(s.expr, Module) \
+        ][0]
+        assert not mod is None, f"No module with name {id} was found!"
+        return Inst(mod, l_e)
     
     ## Arithmetic expressions (assertion language)
-    def impl(self, a0, a1):
+    def impl(self, c):
+        (a0, a1,) = c
         return Impl(a0, a1)
     
-    def arith_xor(self, a0, a1):
+    def arith_xor(self, c):
+        (a0, a1,) = c
         return Xor(a0, a1)
     
-    def arith_and(self, a0, a1):
+    def arith_and(self, c):
+        (a0, a1,) = c
         return And(a0, a1) 
     
-    def arith_or(self, a0, a1):
+    def arith_or(self, c):
+        (a0, a1,) = c
         return Or(a0, a1)
     
-    def add(self, a0, a1):
+    def add(self, c):
+        (a0, a1,) = c
         return Add(a0, a1)
     
-    def sub(self, a0, a1):
+    def sub(self, c):
+        (a0, a1,) = c
         return Sub(a0, a1)
     
-    def eq(self, a0, a1):
+    def eq(self, c):
+        (a0, a1,) = c
         return Eq(a0, a1)
 
     # syntactic sugar, directly desugars to xor(a, 1)
-    def arith_not(self, a):
+    def arith_not(self, c):
+        (a,) = c
         return Not(a)
     
-    def scoped_arith(self, a):
+    def scoped_arith(self, c):
+        (a,) = c
         return a
     
     ## Module definition
-    def res(self):
+    def res(self, c):
         return Res()
     
-    def precond(self, a):
+    def precond(self, c):
+        (a,) = c
         return PreCond(a)
     
-    def postcond(self, a):
+    def postcond(self, c):
+        (a,) = c
         return PostCond(a)
     
-    def contract(self, pre, post):
+    def contract(self, c):
+        (pre, post,) = c
         return Contract(pre, post)
     
-    def out(self, e):
+    def out(self, c):
+        (e,) = c
         return Out(e)
     
-    def body(self, l_s, out):
-        return Body(l_s, out)
+    def body(self, c):
+        (l_s, out) = (c[0:-2], c[-1])
+        out_res = None # avoid aliasing
+        # Out is optional
+        if not isinstance(out, Out):
+            l_s.append(out)
+        else:
+            out_res = out
+        return Body(l_s, out_res)
     
-    def module(self, l_v, c, b):
-        return Module(l_v, c, b)
+    def module(self, c):
+        (l_v, cntr, b) = (c[0:-2], c[-2], c[-1])
+        cntr_res = None # avoid aliasing
+        # Contract is optional, this should handle that
+        if not isinstance(cntr, Contract):
+            l_v.append(cntr)
+        else:
+            cntr_res = cntr
+        return Module(l_v, cntr_res, b)
     
     ## Statements
-    def reg(self, id, init, next):
-        return Reg(id, init, next)
+    ## Symbol creating statements must also update the context
+    def reg(self, c):
+        (id, init, next,) = c
+        # Create the register statement
+        reg = Reg(id, init, next)
+
+        # Make sure that the symbol doesn't already exist
+        sym: Symbol = Symbol(id, reg)
+        assert not (sym in self.context), \
+            f"Symbol {sym.name} was defined multiple times!! Symbols must only have one definition"
+        
+        # Update the context with the new symbol
+        self.context.append(sym)
+        return reg
     
-    def bind(self, id, e):
-        return Bind(id, e)
+    def bind(self, c):
+        (id, e,) = c
+        # Define the bind statement
+        bind: Bind = Bind(id, e)
+
+        # Make sure that the symbol doesn't already exist
+        sym: Symbol = Symbol(id, e)
+        assert not (sym in self.context), \
+            f"Symbol {sym.name} was defined multiple times!! Symbols must only have one definition"
+
+        # Update the context
+        self.context.append(sym)
+        return bind
     
-    def stmt_assert(self, a):
+    def stmt_assert(self, c):
+        (a,) = c
         return Assert(a)
     
-    def stmt_assume(self, a):
+    def stmt_assume(self, c):
+        (a,) = c
         return Assume(a)
     
-    def ano_module(self, m):
+    def ano_module(self, c):
+        (m,) = c
         return m
     
-    def stmt_seq(self, s0, s1):
-        return list(s0, s1)
+    def stmt_seq(self, c):
+        (s0, s1,) = c
+        return [s0].append(s1)
     
     def start(self, l_s):
-        return Circuit(l_s, list())
+        return Circuit(l_s, self.context)
         
+

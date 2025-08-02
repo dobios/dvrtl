@@ -30,8 +30,8 @@ def parsewrapper (filepath) -> list[str]:
 def reduce_p_str(p_str: list[str]) -> str:
     return reduce(lambda acc, s: acc + s + "\n", p_str, "")
 
-class BTORTestParser(unittest.TestCase):
-    """Check whether BTOR interface is working properly"""
+class DVRTLTestParser(unittest.TestCase):
+    """Check whether DVRTL interface is working properly"""
      
     # Checks that a minirtl design can be parsed
     def test_parse_tree_mini(self):
@@ -146,7 +146,7 @@ class BTORTestParser(unittest.TestCase):
         c_in
       body
         bind
-          axb
+          axb_
           expr_xor
             a_in
             b_in
@@ -161,7 +161,7 @@ class BTORTestParser(unittest.TestCase):
             scoped_expr
               expr_and
                 c_in
-                axb
+                axb_
   bind
     add2_0
     module
@@ -312,7 +312,7 @@ class BTORTestParser(unittest.TestCase):
         c_in
       body
         bind
-          axb
+          axb_
           expr_xor
             a_in
             b_in
@@ -327,7 +327,7 @@ class BTORTestParser(unittest.TestCase):
             scoped_expr
               expr_and
                 c_in
-                axb
+                axb_
   stmt_seq
     stmt_seq
       stmt_seq
@@ -476,6 +476,17 @@ class BTORTestParser(unittest.TestCase):
         self.assertEqual(parser.tree.pretty(), expected_tree)
 
         print("test parse tree untyped passed")
+
+    # Checks that a minirtl design can be parsed and converted to an AST
+    def test_ast_mini(self):
+      parser: Parser = parse("tests/dv/mini.dv", isfilename=True)
+      
+      print(parser.ast)
+      expected_ast = parser.ast
+
+      self.assertEqual(parser.ast, expected_ast)
+
+      print("test ast mini passed")
 
 if __name__ == '__main__':
     unittest.main()

@@ -6,9 +6,9 @@ sum = mod (a_in, b_in, c_in) [
     out c_in xor axb
 }
 carry = mod (a_in, b_in, c_in){
-    axb = a_in xor b_in
+    axb_ = a_in xor b_in
     anb = a_in and b_in
-    out anb or (c_in and axb)
+    out anb or (c_in and axb_)
 }
 add2_0 = mod (a1, a0, b1, b0) [
     req 1
