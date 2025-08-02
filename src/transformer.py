@@ -54,7 +54,7 @@ class DVRTLTransformer(Transformer):
         (id,) = c 
         print(id)
         # Check context for content
-        ref: Symbol = [s for s in self.context if s == Symbol(id[1:-1], None)][0]
+        ref: Symbol = [s for s in self.context if s == Symbol(id, None)][0]
         return ref
     
     def list_of_variables(self, c):
