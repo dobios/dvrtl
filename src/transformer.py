@@ -52,6 +52,7 @@ class DVRTLTransformer(Transformer):
     ## Base elements
     def identifier(self, c):
         (id,) = c 
+        print(id)
         # Check context for content
         ref: Symbol = [s for s in self.context if s == Symbol(id[1:-1], None)][0]
         return ref
@@ -101,6 +102,7 @@ class DVRTLTransformer(Transformer):
         (id, l_e) = (c[0], c[1:]) 
         # print(id)
         # print(list(map(lambda s: s.toString(), self.context)))
+        # fetch module referenced by symbol
         mod: Module = [ \
             s.expr for s in self.context \
             if s.name == id and isinstance(s.expr, Module) \
