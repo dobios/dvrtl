@@ -15,21 +15,21 @@ add2_0 = mod (a1, a0, b1, b0) [
     ens res eq (a0 + b0)
 ] {
     out sum(a0, b0, 0)
-};
+}
 add2_1 = mod (a1, a0, b1, b0) [
     req 1
     ens res eq ((a0 and b0) + (a1 + b1))
 ]{
     c_0 = carry(a0, b0, 0)
     out sum(a1, b1, c_0)
-};
+}
 carry2 = mod (a1, a0, b1, b0) [
     req 1
     ens res eq ((a0 and b0) + (a1 and b1))
 ]{
     carry0 = carry(a0, b0, 0)
     out carry(a1, b1, carry0)
-};
+}
 bit0 = add2_0(0,1,0,1)
 bit1 = add2_1(0,1,0,1)
 overflow = carry2(0,1,0,1)

@@ -44,7 +44,7 @@ MULTILINE_COMMENT: /\/\*(\*(?!\/)|[^*])*\*\//
 %ignore MULTILINE_COMMENT
 %ignore NEWLINE
 
-?identifier: IDENTIFIER
+?identifier: IDENTIFIER -> identifier
 
 IDENTIFIER: CNAME
           | ESCAPED_IDENTIFIER

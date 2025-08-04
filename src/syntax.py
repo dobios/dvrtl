@@ -48,6 +48,9 @@ class Node:
     # Returns a human-readable version of the node
     def serialize(self) -> str:
         return self.name
+    
+    def toString(self) -> str:
+        return str(self)
 
 # Statement in our circuit, these are the core nodes of a design.
 class Stmt(Node):
@@ -67,6 +70,7 @@ class Symbol(Node):
     def __eq__(self, value) -> bool:
         return isinstance(value, Symbol) and self.name == value.name
     
+    @override
     def toString(self) -> str:
         return f"{self.name}: {self.expr}"
 
@@ -99,6 +103,9 @@ class Circuit:
             self.body, \
             "" \
         )
+    
+    def toString(self) -> str:
+        return f"BODY: {str(list(map(lambda s: s.toString(), self.body)))}\n CONTEXT: {str(self.context)}"
     
 
 ################################################
@@ -182,6 +189,10 @@ class AOp(Arith):
             self.ops, "" \
         )
         return f"{self.name} {operands_s}"
+    
+    @override
+    def toString(self) -> str:
+        return f"NAME: {self.name}\n OPERANDS: {self.ops}"
 
 # Arithmetic binary operator
 class ABinOp(AOp):
@@ -319,6 +330,10 @@ class EOp(Expr):
             self.ops, "" \
         )
         return f"{self.name} {operands_s}"
+    
+    @override
+    def toString(self) -> str:
+        return f"NAME: {self.name}\n OPERANDS: {self.ops}"
 
 # Synthesizable binary operator
 class EBinOp(EOp):
@@ -421,6 +436,10 @@ class ContractOp(Node):
     @override
     def serialize(self) -> str:
         return f"{self.name} {self.cond.serialize()}"
+    
+    @override
+    def toString(self) -> str:
+        return f"NAME: {self.name}\n COND: {self.cond}"
 
 # Postcondition arithmetic expression
 # Only valid in a module definition
@@ -449,6 +468,10 @@ class Contract(Node):
     @override
     def serialize(self) -> str:
         return f"[{self.pre.serialize()}; {self.post.serialize()}]"
+    
+    @override
+    def toString(self) -> str:
+        return f"NAME: {self.name}\n PRECOND: {self.pre}\n POSTCOND: {self.post}"
 
 # Special result reference
 # Only valid inside of a postcondition
@@ -498,6 +521,10 @@ class Body(Node):
                 lambda acc, stmt: acc + f"\t {stmt.serialize()}\n",\
                 self.stmts, "{\n" \
             ) + "}"
+    
+    @override
+    def toString(self) -> str:
+        return f"NAME: {self.name}\n STMTS: {self.stmts}\n OUT: {self.out}"
 
 
 # Module definition
@@ -509,13 +536,17 @@ class Module(Stmt):
     def __init__( \
             self, \
             args: list[In], \
-            contract: Optional[ContractOp], \
+            contract: Optional[Contract], \
             body: Body \
     ) -> None:
         super().__init__("mod")
         self.args: list[In] = args
-        self.contract: Optional[ContractOp] = contract
+        self.contract: Optional[Contract] = contract
         self.body: Body = body 
+
+    @override
+    def toString(self) -> str:
+        return f"NAME: {self.name}\n ARGS: {self.args}\n CONTRACT: {self.contract}\n BODY: {self.body}"
 
 # Arguments can typically be any named thing or unnamed expression
 Arg: TypeAlias = Symbol | Expr | In
@@ -581,6 +612,10 @@ class Bind(Def):
     def serialize(self) -> str:
         return f"{self.name} = {self.e.serialize()}"
     
+    @override
+    def toString(self) -> str:
+        return f"NAME: {self.name}\n EXPR: {self.e.toString()}"
+    
 
 # Register Definition
 #   Notation: 
@@ -610,6 +645,10 @@ class Reg(Def):
     @override
     def serialize(self) -> str:
         return f"{self.name} -> {self.init.serialize()}, {self.next.serialize()}"
+    
+    @override
+    def toString(self) -> str:
+        return f"NAME: {self.name}\n INIT: {self.init}\n NEXT: {self.next}"
     
 
 # Abstract Node for a verification statement
