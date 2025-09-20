@@ -54,13 +54,13 @@ class DVRTLTransformer(Transformer):
         (id,) = c 
         print(id)
         # Check context for content
-        ref: Symbol = [s for s in self.context if s == Symbol(id, None)][0]
-        return ref
+        ref: list[Symbol] = [s for s in self.context if s == Symbol(id, None)]
+        return ref[0] if len(ref) > 0 else Symbol(id, None)
     
     def list_of_variables(self, c):
         # Unpack children
-        (id, l_id) = (c[0][1:-1], c[1:])
-        return list(id).append(l_id)
+        (id, l_id) = (c[0], c[1:])
+        return [id].append(l_id)
     
     def list_of_expr(self, c):
         # unpack children
