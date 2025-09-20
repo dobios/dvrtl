@@ -39,33 +39,33 @@ class DVRTLTestParser(unittest.TestCase):
 
         expected_tree: str = """start
   reg
-    A
+    identifier\tA
     zero
     expr_xor
-      C
+      identifier\tC
       scoped_expr
         expr_xor
-          a
-          b
+          identifier\ta
+          identifier\tb
   reg
-    B
+    identifier\tB
     one
-    B
+    identifier\tB
   reg
-    C
+    identifier\tC
     zero
     expr_or
       scoped_expr
         expr_and
-          A
-          B
+          identifier\tA
+          identifier\tB
       scoped_expr
         expr_and
-          C
+          identifier\tC
           scoped_expr
             expr_xor
-              A
-              B
+              identifier\tA
+              identifier\tB
 """
         self.assertEqual(parser.tree.pretty(), expected_tree)
 
@@ -76,41 +76,41 @@ class DVRTLTestParser(unittest.TestCase):
         parser: Parser = parse("tests/dv/assert.dv", isfilename=True)
         expected_tree: str = """start
   reg
-    A
+    identifier\tA
     zero
     expr_xor
-      C
+      identifier\tC
       scoped_expr
         expr_xor
-          a
-          b
+          identifier\ta
+          identifier\tb
   reg
-    Ap
+    identifier\tAp
     zero
-    A
+    identifier\tA
   reg
-    B
+    identifier\tB
     one
-    B
+    identifier\tB
   reg
-    C
+    identifier\tC
     zero
     expr_or
       scoped_expr
         expr_and
-          A
-          B
+          identifier\tA
+          identifier\tB
       scoped_expr
         expr_and
-          C
+          identifier\tC
           scoped_expr
             expr_xor
-              A
-              B
+              identifier\tA
+              identifier\tB
   stmt_assert
     arith_xor
-      A
-      Ap
+      identifier\tA
+      identifier\tAp
 """
         self.assertEqual(parser.tree.pretty(), expected_tree)
 
@@ -121,132 +121,132 @@ class DVRTLTestParser(unittest.TestCase):
         parser: Parser = parse("tests/dv/mod.dv", isfilename=True)
         expected_tree: str = """start
   bind
-    sum
+    identifier\tsum
     module
       list_of_variables
-        a_in
-        b_in
-        c_in
+        identifier\ta_in
+        identifier\tb_in
+        identifier\tc_in
       body
         bind
-          axb
+          identifier\taxb
           expr_xor
-            a_in
-            b_in
+            identifier\ta_in
+            identifier\tb_in
         out
           expr_xor
-            c_in
-            axb
+            identifier\tc_in
+            identifier\taxb
   bind
-    carry
+    identifier\tcarry
     module
       list_of_variables
-        a_in
-        b_in
-        c_in
+        identifier\ta_in
+        identifier\tb_in
+        identifier\tc_in
       body
         bind
-          axb_
+          identifier\taxb_
           expr_xor
-            a_in
-            b_in
+            identifier\ta_in
+            identifier\tb_in
         bind
-          anb
+          identifier\tanb
           expr_and
-            a_in
-            b_in
+            identifier\ta_in
+            identifier\tb_in
         out
           expr_or
-            anb
+            identifier\tanb
             scoped_expr
               expr_and
-                c_in
-                axb_
+                identifier\tc_in
+                identifier\taxb_
   bind
-    add2_0
+    identifier\tadd2_0
     module
       list_of_variables
-        a1
-        a0
-        b1
-        b0
+        identifier\ta1
+        identifier\ta0
+        identifier\tb1
+        identifier\tb0
       out
         call
-          sum
+          identifier\tsum
           list_of_expr
-            a0
-            b0
+            identifier\ta0
+            identifier\tb0
             zero
   bind
-    add2_1
+    identifier\tadd2_1
     module
       list_of_variables
-        a1
-        a0
-        b1
-        b0
+        identifier\ta1
+        identifier\ta0
+        identifier\tb1
+        identifier\tb0
       body
         bind
-          c_0
+          identifier\tc_0
           call
-            carry
+            identifier\tcarry
             list_of_expr
-              a0
-              b0
+              identifier\ta0
+              identifier\tb0
               zero
         out
           call
-            sum
+            identifier\tsum
             list_of_expr
-              a1
-              b1
-              c_0
+              identifier\ta1
+              identifier\tb1
+              identifier\tc_0
   bind
-    carry2
+    identifier\tcarry2
     module
       list_of_variables
-        a1
-        a0
-        b1
-        b0
+        identifier\ta1
+        identifier\ta0
+        identifier\tb1
+        identifier\tb0
       body
         bind
-          carry0
+          identifier\tcarry0
           call
-            carry
+            identifier\tcarry
             list_of_expr
-              a0
-              b0
+              identifier\ta0
+              identifier\tb0
               zero
         out
           call
-            carry
+            identifier\tcarry
             list_of_expr
-              a1
-              b1
-              carry0
+              identifier\ta1
+              identifier\tb1
+              identifier\tcarry0
   bind
-    bit0
+    identifier\tbit0
     call
-      add2_0
+      identifier\tadd2_0
       list_of_expr
         zero
         one
         zero
         one
   bind
-    bit1
+    identifier\tbit1
     call
-      add2_1
+      identifier\tadd2_1
       list_of_expr
         zero
         one
         zero
         one
   bind
-    overflow
+    identifier\toverflow
     call
-      carry2
+      identifier\tcarry2
       list_of_expr
         zero
         one
@@ -257,15 +257,15 @@ class DVRTLTestParser(unittest.TestCase):
       arith_and
         scoped_arith
           eq
-            bit0
+            identifier\tbit0
             zero
         scoped_arith
           eq
-            bit1
+            identifier\tbit1
             one
       scoped_arith
         eq
-          overflow
+          identifier\toverflow
           zero
 """
         self.assertEqual(parser.tree.pretty(), expected_tree)
@@ -277,181 +277,178 @@ class DVRTLTestParser(unittest.TestCase):
         parser: Parser = parse("tests/dv/untyped.dv", isfilename=True)
         expected_tree: str = """start
   bind
-    sum
+    identifier\tsum
     module
       list_of_variables
-        a_in
-        b_in
-        c_in
+        identifier\ta_in
+        identifier\tb_in
+        identifier\tc_in
       contract
         one
         eq
-          res
+          identifier\tres
           scoped_arith
             add
               add
-                a_in
-                b_in
-              c_in
+                identifier\ta_in
+                identifier\tb_in
+              identifier\tc_in
       body
         bind
-          axb
+          identifier\taxb
           expr_xor
-            a_in
-            b_in
+            identifier\ta_in
+            identifier\tb_in
         out
           expr_xor
-            c_in
-            axb
+            identifier\tc_in
+            identifier\taxb
   bind
-    carry
+    identifier\tcarry
     module
       list_of_variables
-        a_in
-        b_in
-        c_in
+        identifier\ta_in
+        identifier\tb_in
+        identifier\tc_in
       body
         bind
-          axb_
+          identifier\taxb_
           expr_xor
-            a_in
-            b_in
+            identifier\ta_in
+            identifier\tb_in
         bind
-          anb
+          identifier\tanb
           expr_and
-            a_in
-            b_in
+            identifier\ta_in
+            identifier\tb_in
         out
           expr_or
-            anb
+            identifier\tanb
             scoped_expr
               expr_and
-                c_in
-                axb_
-  stmt_seq
-    stmt_seq
-      stmt_seq
-        bind
-          add2_0
-          module
-            list_of_variables
-              a1
-              a0
-              b1
-              b0
-            contract
-              one
-              eq
-                res
-                scoped_arith
-                  add
-                    a0
-                    b0
-            out
-              call
-                sum
-                list_of_expr
-                  a0
-                  b0
-                  zero
-        bind
-          add2_1
-          module
-            list_of_variables
-              a1
-              a0
-              b1
-              b0
-            contract
-              one
-              eq
-                res
-                scoped_arith
-                  add
-                    scoped_arith
-                      arith_and
-                        a0
-                        b0
-                    scoped_arith
-                      add
-                        a1
-                        b1
-            body
-              bind
-                c_0
-                call
-                  carry
-                  list_of_expr
-                    a0
-                    b0
-                    zero
-              out
-                call
-                  sum
-                  list_of_expr
-                    a1
-                    b1
-                    c_0
-      bind
-        carry2
-        module
-          list_of_variables
-            a1
-            a0
-            b1
-            b0
-          contract
-            one
-            eq
-              res
+                identifier\tc_in
+                identifier\taxb_
+  bind
+    identifier\tadd2_0
+    module
+      list_of_variables
+        identifier\ta1
+        identifier\ta0
+        identifier\tb1
+        identifier\tb0
+      contract
+        one
+        eq
+          identifier\tres
+          scoped_arith
+            add
+              identifier\ta0
+              identifier\tb0
+      out
+        call
+          identifier\tsum
+          list_of_expr
+            identifier\ta0
+            identifier\tb0
+            zero
+  bind
+    identifier\tadd2_1
+    module
+      list_of_variables
+        identifier\ta1
+        identifier\ta0
+        identifier\tb1
+        identifier\tb0
+      contract
+        one
+        eq
+          identifier\tres
+          scoped_arith
+            add
+              scoped_expr
+                expr_and
+                  identifier\ta0
+                  identifier\tb0
               scoped_arith
                 add
-                  scoped_arith
-                    arith_and
-                      a0
-                      b0
-                  scoped_arith
-                    arith_and
-                      a1
-                      b1
-          body
-            bind
-              carry0
-              call
-                carry
-                list_of_expr
-                  a0
-                  b0
-                  zero
-            out
-              call
-                carry
-                list_of_expr
-                  a1
-                  b1
-                  carry0
-    bind
-      bit0
-      call
-        add2_0
-        list_of_expr
-          zero
-          one
-          zero
-          one
+                  identifier\ta1
+                  identifier\tb1
+      body
+        bind
+          identifier\tc_0
+          call
+            identifier\tcarry
+            list_of_expr
+              identifier\ta0
+              identifier\tb0
+              zero
+        out
+          call
+            identifier\tsum
+            list_of_expr
+              identifier\ta1
+              identifier\tb1
+              identifier\tc_0
   bind
-    bit1
+    identifier\tcarry2
+    module
+      list_of_variables
+        identifier\ta1
+        identifier\ta0
+        identifier\tb1
+        identifier\tb0
+      contract
+        one
+        eq
+          identifier\tres
+          scoped_arith
+            add
+              scoped_expr
+                expr_and
+                  identifier\ta0
+                  identifier\tb0
+              scoped_expr
+                expr_and
+                  identifier\ta1
+                  identifier\tb1
+      body
+        bind
+          identifier\tcarry0
+          call
+            identifier\tcarry
+            list_of_expr
+              identifier\ta0
+              identifier\tb0
+              zero
+        out
+          call
+            identifier\tcarry
+            list_of_expr
+              identifier\ta1
+              identifier\tb1
+              identifier\tcarry0
+  bind
+    identifier\tbit0
     call
-      add2_1
+      identifier\tadd2_0
       list_of_expr
         zero
         one
         zero
         one
   bind
-    overflow
+    identifier\tbit1
     call
-      carry2
+      identifier\tadd2_1
+      list_of_expr
+        zero
+        one
+        zero
+        one
+  bind
+    identifier\toverflow
+    call
+      identifier\tcarry2
       list_of_expr
         zero
         one
@@ -462,17 +459,18 @@ class DVRTLTestParser(unittest.TestCase):
       arith_and
         scoped_arith
           eq
-            bit0
+            identifier\tbit0
             zero
         scoped_arith
           eq
-            bit1
+            identifier\tbit1
             one
       scoped_arith
         eq
-          overflow
+          identifier\toverflow
           zero
 """
+        self.maxDiff = None
         self.assertEqual(parser.tree.pretty(), expected_tree)
 
         print("test parse tree untyped passed")
@@ -481,7 +479,7 @@ class DVRTLTestParser(unittest.TestCase):
     def test_ast_mini(self):
       parser: Parser = parse("tests/dv/mini.dv", isfilename=True)
       
-      print(parser.ast)
+      print(parser.ast.toString())
       expected_ast = parser.ast
 
       self.assertEqual(parser.ast, expected_ast)
