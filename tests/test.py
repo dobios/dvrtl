@@ -470,6 +470,7 @@ class DVRTLTestParser(unittest.TestCase):
           identifier\toverflow
           zero
 """
+        self.maxDiff = None
         self.assertEqual(parser.tree.pretty(), expected_tree)
 
         print("test parse tree untyped passed")

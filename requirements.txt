@@ -52,7 +52,7 @@ wheel==0.43.0
     # via pip-tools
 tqdm==4.67.1
 
-lark==1.1.9
+lark==1.2.2
 
 
 # The following packages are considered to be unsafe in a requirements file:
