@@ -42,8 +42,9 @@ class Node:
     # Nodes by default only contain a name
     # @param{name: str} : human-readable name of the node
     #   this is equivalent to how it can be viewed in the source. 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, children: list = None) -> None:
         self.name: str = name 
+        self.children: list = children
 
     # Returns a human-readable version of the node
     def serialize(self) -> str:
@@ -86,13 +87,14 @@ class Expr(Arith):
         super().__init__(name)
 
 # Top-level Root Node of our AST
-class Circuit:
+class Circuit(Node):
     # Circuits are defined by a list of statements
     # @param{body: list[Stmt]} : The body of our circuit
     #   defined as a list of statements
     # @param{context: list[Symbol]}: The global context of 
     #   the circuit that binds all names to valid statements
-    def __init__(self, body : list[Stmt], context: list [Symbol]) -> None:
+    def __init__(self, body : list[Stmt], context: list[Symbol]) -> None:
+        super().__init__("circuit", body)
         self.body: list[Stmt] = body
         self.context: list[Symbol] = context
 
@@ -107,6 +109,41 @@ class Circuit:
     def toString(self) -> str:
         return f"BODY: {str(list(map(lambda s: s.toString(), self.body)))}\n CONTEXT: {str(self.context)}"
     
+    # DFS traversal of the entire circuit
+    # @param fn: A function to be run on every node of the circuit in a DFS order
+    # This should ideally implement a visitor pattern and be generic over a node.
+    def traverse_dfs(self, fn) -> None:
+        worklist = []
+        handled = []
+
+        # Sanity check: make sure the circuit isn't empty
+        if len(self.body) < 1:
+            return
+        
+        cur_node = self.body[0]
+        while not (cur_node is None):
+            # Check that we haven't already explored this node
+            if cur_node in handled:
+                cur_node = worklist.pop() if len(worklist) > 0 else None
+                continue
+            
+            # Check if we have unexplored children
+            unexpl_chldr = list(set(handled) & set(cur_node.children)) 
+            if len(unexpl_chldr) == 0:
+                # We have explored our children so we can handle this node now
+                fn(cur_node)
+                
+                # Add our node the the handled list
+                handled.append(cur_node)
+
+                # Move on
+                cur_node = worklist.pop() if len(worklist) > 0 else None
+                continue
+            
+            # We have unexplored children so we sould add our node to the list and go to the next child
+            worklist.append(cur_node)
+            cur_node = unexpl_chldr.pop() 
+
 
 ################################################
 ## Values v ::= 0 | 1
