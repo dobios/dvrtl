@@ -52,7 +52,7 @@ class DVRTLTransformer(Transformer):
     ## Base elements
     def identifier(self, c):
         (id,) = c 
-        print(id)
+        # print(id)
         # Check context for content
         ref: list[Symbol] = [s for s in self.context if s == Symbol(id, None)]
         return ref[0] if len(ref) > 0 else Symbol(id, None)
@@ -192,15 +192,19 @@ class DVRTLTransformer(Transformer):
     ## Symbol creating statements must also update the context
     def reg(self, c):
         (id, init, next,) = c
+
+        # Check that we have extracted the right children
+        assert(isinstance(id, Symbol))
+
         # Create the register statement
-        reg = Reg(id, init, next)
+        reg = Reg(id.name, init, next)
 
         # Make sure that the symbol doesn't already exist
-        sym: Symbol = Symbol(id, reg)
-        assert not (sym in self.context), \
-            f"Symbol {sym.name} was defined multiple times!! Symbols must only have one definition"
+        assert not (id in self.context), \
+            f"Symbol {id.name} was defined multiple times!! Symbols must only have one definition"
         
         # Update the context with the new symbol
+        sym: Symbol = Symbol(id.name, reg)
         self.context.append(sym)
         return reg
     

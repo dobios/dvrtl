@@ -479,12 +479,17 @@ class DVRTLTestParser(unittest.TestCase):
     def test_ast_mini(self):
       parser: Parser = parse("tests/dv/mini.dv", isfilename=True)
       
-      print(parser.ast.toString())
-      expected_ast = parser.ast
-
-      self.assertEqual(parser.ast, expected_ast)
+      with open("tests/dv/mini.dv") as exp_f:
+          expected = reduce( \
+              # Strip parentheses (we don't actually need to emit those)
+              lambda acc, l : acc + l.replace('(', "").replace(')', ""),  \
+              exp_f.readlines(), "" 
+          )
+          actual = parser.ast.serialize()
+          self.assertEqual(actual, expected)
 
       print("test ast mini passed")
+
 
 if __name__ == '__main__':
     unittest.main()

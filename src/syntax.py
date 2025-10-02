@@ -74,6 +74,10 @@ class Symbol(Node):
     @override
     def toString(self) -> str:
         return f"{self.name}: {self.expr}"
+    
+    @override
+    def serialize(self) -> str:
+        return self.name
 
 
 # Arithmetic expression (used in an assertion/assumption)
