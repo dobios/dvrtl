@@ -16,28 +16,44 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #########################################################################
 
-from functools import reduce
 import unittest
+
+from functools import reduce
+from re import sub
 
 from src.parser import *
 
-def parsewrapper (filepath) -> list[str]:
-    dvstr: list[str] = []
-    with open(filepath, "r") as f:
-        dvstr = f.readlines()
-    return dvstr
-
-def reduce_p_str(p_str: list[str]) -> str:
-    return reduce(lambda acc, s: acc + s + "\n", p_str, "")
+# Stores a file to a string while removing all parentheses
+# and decorative spaces (not emitted by compiler).
+def desugar_file_to_str(file_name: str) -> str:
+    with open(file_name) as exp_f:
+          return sub(' +', ' ', reduce( \
+              # Strip parentheses (we don't actually need to emit those)
+              lambda acc, l : acc + l.replace('(', "").replace(')', ""),  \
+              exp_f.readlines(), "" 
+          ))
+    
+# tests that the paser can successfully parse a dvrtl file and
+# generate a correct parse tree
+def test_parse_tree(filename: str, exp_tree: str) -> tuple[str, str]:
+    parser: Parser = parse(filename, isfilename=True)
+    return (parser.tree.pretty(), exp_tree)
+    
+# tests that a file converted to an ast then emitted results in the same 
+# as simply desugaring the file itself.
+def test_file_ast(filename: str) -> tuple[str, str]:
+  parser: Parser = parse(filename, isfilename=True)
+  expected: str = desugar_file_to_str(filename)
+  actual: str = parser.ast.serialize()
+  return (expected, actual)
 
 class DVRTLTestParser(unittest.TestCase):
     """Check whether DVRTL interface is working properly"""
      
     # Checks that a minirtl design can be parsed
     def test_parse_tree_mini(self):
-        parser: Parser = parse("tests/dv/mini.dv", isfilename=True)
-
-        expected_tree: str = """start
+        self.assertEqual(*test_parse_tree("tests/dv/mini.dv", \
+"""start
   reg
     identifier\tA
     zero
@@ -66,15 +82,13 @@ class DVRTLTestParser(unittest.TestCase):
             expr_xor
               identifier\tA
               identifier\tB
-"""
-        self.assertEqual(parser.tree.pretty(), expected_tree)
-
+"""))
         print("test parse tree mini passed")
 
     # checks that an assertrtl design can be parsed
     def test_parse_tree_assert(self):
-        parser: Parser = parse("tests/dv/assert.dv", isfilename=True)
-        expected_tree: str = """start
+        self.assertEqual(*test_parse_tree("tests/dv/assert.dv", \
+"""start
   reg
     identifier\tA
     zero
@@ -111,15 +125,13 @@ class DVRTLTestParser(unittest.TestCase):
     arith_xor
       identifier\tA
       identifier\tAp
-"""
-        self.assertEqual(parser.tree.pretty(), expected_tree)
-
+"""))
         print("test parse tree assert passed")
 
     # checks that a modrtl design can be parsed
     def test_parse_tree_mod(self):
-        parser: Parser = parse("tests/dv/mod.dv", isfilename=True)
-        expected_tree: str = """start
+        self.assertEqual(*test_parse_tree("tests/dv/mod.dv", \
+"""start
   bind
     identifier\tsum
     module
@@ -267,15 +279,13 @@ class DVRTLTestParser(unittest.TestCase):
         eq
           identifier\toverflow
           zero
-"""
-        self.assertEqual(parser.tree.pretty(), expected_tree)
-
+"""))
         print("test parse tree mod passed")
 
     # checks that an untyped design can be parsed
     def test_parse_tree_untyped(self):
-        parser: Parser = parse("tests/dv/untyped.dv", isfilename=True)
-        expected_tree: str = """start
+        self.assertEqual(*test_parse_tree("tests/dv/untyped.dv", \
+"""start
   bind
     identifier\tsum
     module
@@ -469,26 +479,25 @@ class DVRTLTestParser(unittest.TestCase):
         eq
           identifier\toverflow
           zero
-"""
-        self.maxDiff = None
-        self.assertEqual(parser.tree.pretty(), expected_tree)
-
+"""))
         print("test parse tree untyped passed")
 
     # Checks that a minirtl design can be parsed and converted to an AST
     def test_ast_mini(self):
-      parser: Parser = parse("tests/dv/mini.dv", isfilename=True)
-      
-      with open("tests/dv/mini.dv") as exp_f:
-          expected = reduce( \
-              # Strip parentheses (we don't actually need to emit those)
-              lambda acc, l : acc + l.replace('(', "").replace(')', ""),  \
-              exp_f.readlines(), "" 
-          )
-          actual = parser.ast.serialize()
-          self.assertEqual(actual, expected)
-
+      self.assertEqual(*test_file_ast("tests/dv/mini.dv"))
       print("test ast mini passed")
+
+    # Checks that the assert design can be parsed and converted to an AST
+    def test_ast_assert(self):
+      self.assertEqual(*test_file_ast("tests/dv/assert.dv"))
+      print("test ast assert passed")
+
+    # Checks that the modular design can be parsed and converted to an AST
+    def test_mod_assert(self):
+      (a, e) = test_file_ast("tests/dv/mod.dv")
+      print(f"Actual:\n{a}\n\nExpected:\n{e}\n")
+      self.assertEqual(*(a,e))
+      print("test ast mod passed")
 
 
 if __name__ == '__main__':

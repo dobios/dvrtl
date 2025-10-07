@@ -36,7 +36,7 @@ Circuit c       ::= [s]*
 The AST is implemented in syntax.py and parse tree in dvrtl.lark/parser.py
 """
 
-from lark import Transformer
+from lark import Transformer, Token
 from .syntax import *
 
 ## Transforms a parse tree into a DVRTL AST
@@ -52,10 +52,16 @@ class DVRTLTransformer(Transformer):
     ## Base elements
     def identifier(self, c):
         (id,) = c 
-        # print(id)
+        
+        # Typecheck for the child extraction
+        assert isinstance(id, Token)
+
+        # Retrieve the actual name
+        name = id.value
+
         # Check context for content
-        ref: list[Symbol] = [s for s in self.context if s == Symbol(id, None)]
-        return ref[0] if len(ref) > 0 else Symbol(id, None)
+        ref: list[Symbol] = [s for s in self.context if s == Symbol(name, None)]
+        return ref[0] if len(ref) > 0 else Symbol(name, None)
     
     def list_of_variables(self, c):
         # Unpack children
@@ -100,15 +106,20 @@ class DVRTLTransformer(Transformer):
     
     def call(self, c):
         (id, l_e) = (c[0], c[1:]) 
-        # print(id)
-        # print(list(map(lambda s: s.toString(), self.context)))
+        
+        # Check that we have extracted the right children
+        assert isinstance(id, Symbol)
+
+        name = id.name
+        
         # fetch module referenced by symbol
-        mod: Module = [ \
+        mods: Module = [ \
             s.expr for s in self.context \
-            if s.name == id and isinstance(s.expr, Module) \
-        ][0]
-        assert not mod is None, f"No module with name {id} was found!"
-        return Inst(mod, l_e)
+            if s.name == name and isinstance(s.expr, Module) \
+        ]
+        print(f"CONTEXT: {list(map(lambda sym: (sym.name, sym.expr.serialize()), self.context))}")
+        assert len(mods) != 0, f"No module with name {name} was found!"
+        return Inst(mods[0], l_e)
     
     ## Arithmetic expressions (assertion language)
     def impl(self, c):
@@ -194,7 +205,7 @@ class DVRTLTransformer(Transformer):
         (id, init, next,) = c
 
         # Check that we have extracted the right children
-        assert(isinstance(id, Symbol))
+        assert isinstance(id, Symbol)
 
         # Create the register statement
         reg = Reg(id.name, init, next)
@@ -210,15 +221,18 @@ class DVRTLTransformer(Transformer):
     
     def bind(self, c):
         (id, e,) = c
-        # Define the bind statement
-        bind: Bind = Bind(id, e)
 
-        # Make sure that the symbol doesn't already exist
-        sym: Symbol = Symbol(id, e)
-        assert not (sym in self.context), \
-            f"Symbol {sym.name} was defined multiple times!! Symbols must only have one definition"
+        # Check that we have extracted the right children
+        assert isinstance(id, Symbol)
+
+        # Define the bind statement
+        bind: Bind = Bind(id.name, e)
+
+        assert not (id in self.context), \
+            f"Symbol {id.name} was defined multiple times!! Symbols must only have one definition"
 
         # Update the context
+        sym: Symbol = Symbol(id.name, bind)
         self.context.append(sym)
         return bind
     
