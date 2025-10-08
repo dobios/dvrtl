@@ -508,7 +508,7 @@ class Contract(Node):
 
     @override
     def serialize(self) -> str:
-        return f"[{self.pre.serialize()}; {self.post.serialize()}]"
+        return f"[\n\t{self.pre.serialize()}\n\t{self.post.serialize()}\n]"
     
     @override
     def toString(self) -> str:
@@ -559,7 +559,7 @@ class Body(Node):
     @override
     def serialize(self) -> str:
         return reduce( \
-                lambda acc, stmt: acc + f"\t {stmt.serialize()}\n",\
+                lambda acc, stmt: acc + f"\t{stmt.serialize()}\n",\
                 self.stmts, "{\n" \
             ) + "}"
     
@@ -584,6 +584,19 @@ class Module(Stmt):
         self.args: list[In] = args
         self.contract: Optional[Contract] = contract
         self.body: Body = body 
+
+    @override
+    def serialize(self) -> str:
+        # Handle the case where either no arguments are given or empty arguments are given
+        args_s: str = "" if self.args is None else reduce( \
+            lambda acc, arg: acc + ", " + (arg.serialize() if arg is not None else ""), \
+            self.args, "" \
+        )
+        interface: str = f"{self.name} ({args_s}) "
+        contract: str = "" if self.contract is None else self.contract.serialize()
+        body: str = self.body.serialize()
+        
+        return f"{interface}{contract}{body}"
 
     @override
     def toString(self) -> str:

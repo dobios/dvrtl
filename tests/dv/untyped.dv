@@ -1,7 +1,7 @@
 sum = mod (a_in, b_in, c_in) [
     req 1
     ens res eq (a_in + b_in + c_in)
-]{
+] {
     axb = a_in xor b_in
     out c_in xor axb
 }
@@ -19,14 +19,14 @@ add2_0 = mod (a1, a0, b1, b0) [
 add2_1 = mod (a1, a0, b1, b0) [
     req 1
     ens res eq ((a0 and b0) + (a1 + b1))
-]{
+] {
     c_0 = carry(a0, b0, 0)
     out sum(a1, b1, c_0)
 }
 carry2 = mod (a1, a0, b1, b0) [
     req 1
     ens res eq ((a0 and b0) + (a1 and b1))
-]{
+] {
     carry0 = carry(a0, b0, 0)
     out carry(a1, b1, carry0)
 }

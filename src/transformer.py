@@ -117,7 +117,16 @@ class DVRTLTransformer(Transformer):
             s.expr for s in self.context \
             if s.name == name and isinstance(s.expr, Module) \
         ]
-        print(f"CONTEXT: {list(map(lambda sym: (sym.name, sym.expr.serialize()), self.context))}")
+
+        # Workaround for printing either typed objects because mypy is stupid
+        def sym_to_str(sym: Symbol) -> str:
+            if sym.expr is None:
+                return (sym.name, "")
+            return (sym.name, sym.expr.serialize())
+        
+        # debug print
+        print(f"CONTEXT: {list(map(sym_to_str, self.context))}")
+        
         assert len(mods) != 0, f"No module with name {name} was found!"
         return Inst(mods[0], l_e)
     
