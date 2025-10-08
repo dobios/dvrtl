@@ -198,6 +198,7 @@ class DVRTLTransformer(Transformer):
             out_res = out
         return Body(l_s, out_res)
     
+    #TODO: FIX MODULE TRANSFORMER TO INCLUDE ARGUMENTS AND BODY CORRECTLY
     def module(self, c):
         (l_v, cntr, b) = (c[0:-2], c[-2], c[-1])
         cntr_res = None # avoid aliasing
